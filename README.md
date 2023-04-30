@@ -1,4 +1,10 @@
-# causal_reasoning_omics
+<p align="left">
+  <img alt="chocolate" src="img/chocolate.jpeg" width="25%" height="25%">
+  <figcaption> Fig.1 - The amount of chocolate consumption is correlated with the prospect of winning a Nobel Prize </figcaption>
+</p>
+
+# Causal Reasoning Analysis 
+
 A collection of tools, which, when given a readout of a perturbation experiment, runs tools such as CARNIVAL/causalR to infer the causal factors that leads to the observed outcome
 
 # Dependencies
