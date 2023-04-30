@@ -65,7 +65,14 @@ CarnivalClass <- R6::R6Class(
       message(date(), " => importing OmniPath annotations in SIF format")
       
       # run carnival using progeny and TF activity scores
-      omniR <- data.table::as.data.table(OmnipathR::import_omnipath_interactions())
+      organism_id <- NULL
+      if(self$organism == 'Human') {
+        organism_id <- 9606
+      } else if(self$organism == 'Mouse') {
+        organism_id <- 10090
+      }
+      # url
+      omniR <- data.table::as.data.table(OmnipathR::import_omnipath_interactions(organism = organism_id))
       # convert to signed and directed 
       omnipath_sd <- omniR[consensus_direction == 1][consensus_stimulation == 1 | consensus_inhibition == 1]
       omnipath_sd[consensus_stimulation == 0]$consensus_stimulation <- -1
@@ -75,7 +82,7 @@ CarnivalClass <- R6::R6Class(
       # check consistency on consensus sign and select only those in a SIF format
       fields <- c('source_genesymbol', 'consensus_stimulation', 
                   'consensus_inhibition', 'target_genesymbol')
-      sif <- unique(subset(omnipath_sd, select = fields)[consensus_stimulation == consensus_inhibition])
+      sif <- subset(omnipath_sd, select = fields)[consensus_stimulation == consensus_inhibition]
       sif$consensus_stimulation <- NULL
       colnames(sif) <- c('source', 'interaction', 'target')
       # remove complexes
