@@ -19,8 +19,17 @@ CBC solver (for integer linear programming) optimisation
 conda install -c conda-forge coincbc
 ```
 
+## CausalR 
+
+```
+library(OmnipathR)
+library(CausalR)
+library(data.table)
+```
 
 ## To Run Carnival
+
+For more info on CARNIVAL, see https://www.bioconductor.org/packages/release/bioc/html/CARNIVAL.html
 
 ```
 # import CarnivalClass
@@ -41,5 +50,38 @@ carnival$carnival_result
 carnival$progeny_scores
 carnival$tf_activity_scores
 ```
+
+## To Run CausalR 
+
+For more info, see: https://www.bioconductor.org/packages/release/bioc/html/CausalR.html
+
+```
+# import CausalrClass
+source('./src/causalR.R')
+
+# instantiate the class
+# it is important to define what is a good threshold for up/down regulation 
+# based on the scores found in scores_file_path 
+# datasets: which network to import (use dorothea network for testing, 
+# causalR can take long to run on the whole omnipath network)
+caus <- CausalrClass$new(scores_file_path = 'data/lincs_troglitazone_PC3.csv', 
+                         organism = 'Human', 
+                         upregulationThreshold = 1,
+                         downregulationThreshold = -1,
+                         datasets = 'dorothea') 
+
+# Run "Sequential Causal Analysis of Networks" 
+caus$run_scanr(numberOfDeltaToScan = 5, topNumGenes = 100)
+
+# Access the results
+caus$result
+
+# Top genes who rank among the top genes most consistently:
+caus$result$commonNodes
+
+```
+
+
+
 
 
