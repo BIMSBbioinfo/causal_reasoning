@@ -3,6 +3,8 @@ A collection of tools, which, when given a readout of a perturbation experiment,
 
 # Dependencies
 
+
+## CARNIVAL
 R libraries
 ```
 library(CARNIVAL)
@@ -11,6 +13,12 @@ library(dorothea)
 library(OmnipathR)
 library(data.table)
 ```
+
+CBC solver (for integer linear programming) optimisation
+```
+conda install -c conda-forge coincbc
+```
+
 
 ## To Run Carnival
 
