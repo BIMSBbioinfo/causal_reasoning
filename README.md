@@ -26,13 +26,13 @@ conda install -c conda-forge coincbc
 # import CarnivalClass
 source('./src/carnival.R')
 
-# instantiate the class; imports perturbation data, calculates pathway and TF activity scores; processes omnipath data
+# instantiate the class; imports perturbation data
+# calculates pathway and TF activity scores; processes omnipath data
 carnival <- CarnivalClass$new(scores_file_path = './data/lincs_troglitazone_PC3.csv',
                               organism = 'Human', 
                               cbc_solver_path = '~/.conda/envs/causal_reasoning/bin/cbc')
 # run CARNIVAL 
 carnival$runCarnival()
-
 
 # access the results
 carnival$carnival_result
