@@ -100,13 +100,14 @@ CarnivalClass <- R6::R6Class(
       # tf scores in list
       tfList <- self$generateTFList(self$tf_activity_scores, top='all', access_idx = 1)
       
-      iniMTX = base::setdiff(self$omnipath_sif$source, self$omnipath_sifsif$target)
+      iniMTX = base::setdiff(self$omnipath_sif$source, self$omnipath_sif$target)
       initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
                                                  ncol = length(iniMTX)), 
                                     stringsAsFactors = F)
       colnames(initiators) = iniMTX
+      print(head(initiators))
       
-      carnival_result = CARNIVAL::runCARNIVAL( inputObj= initiators,
+      carnival_result = CARNIVAL::runCARNIVAL( inputObj = initiators,
                                      measObj = tfList$score, 
                                      netObj = self$omnipath_sif, 
                                      weightObj = progenylist$score, 
