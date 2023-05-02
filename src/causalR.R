@@ -51,7 +51,7 @@ CausalrClass <- R6::R6Class(
     },
     # import omnipath annotations and cleanup to get a SIF format
     # signed-directed graph 
-    get_omnipath_sif = function(datasets = c('dorothea')) {
+    get_omnipath_sif = function(datasets = c('omnipath')) {
       message(date(), " => importing OmniPath annotations in SIF format")
       
       # run carnival using progeny and TF activity scores
