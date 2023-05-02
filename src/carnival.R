@@ -103,7 +103,7 @@ CarnivalClass <- R6::R6Class(
                                     stringsAsFactors = F)
       colnames(initiators) = iniMTX
       
-      carnival_result = runCARNIVAL( inputObj= initiators,
+      carnival_result = CARNIVAL::runCARNIVAL( inputObj= initiators,
                                      measObj = tfList$score, 
                                      netObj = sif, 
                                      weightObj = progenylist$score, 
