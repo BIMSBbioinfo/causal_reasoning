@@ -4,13 +4,14 @@ CarnivalClass <- R6::R6Class(
     scores_file_path = NULL,
     organism = NULL,
     cbc_solver_path = NULL,
+    datasets = NULL, # see OmnipathR::import_omnipath_interactions for options (ex. omnipath, dorothea)
     scores = NULL,
     progeny_scores = NULL,
     tf_activity_scores = NULL,
     omnipath_sif = NULL,
     carnival_result = NULL,
     
-    initialize = function(scores_file_path, organism, cbc_solver_path) {
+    initialize = function(scores_file_path, organism, cbc_solver_path, datasets = c('omnipath')) {
       if (missing(scores_file_path) || missing(organism) || missing(cbc_solver_path)) {
         stop("All three arguments must be provided: scores_file_path, organism, cbc_solver_path")
       }
@@ -18,6 +19,7 @@ CarnivalClass <- R6::R6Class(
       self$scores_file_path <- scores_file_path
       self$organism <- organism
       self$cbc_solver_path <- cbc_solver_path
+      self$datasets <- datasets 
       if(!organism %in% c('Human', 'Mouse')){
         stop("Can't create a class for ",organism,". Allowed options are Human and Mouse")
       }
@@ -61,7 +63,7 @@ CarnivalClass <- R6::R6Class(
     },
     # import omnipath annotations and cleanup to get a SIF format
     # signed-directed graph 
-    get_omnipath_sif = function() {
+    get_omnipath_sif = function(datasets = c('omnipath')) {
       message(date(), " => importing OmniPath annotations in SIF format")
       
       # run carnival using progeny and TF activity scores
@@ -72,7 +74,8 @@ CarnivalClass <- R6::R6Class(
         organism_id <- 10090
       }
       # url
-      omniR <- data.table::as.data.table(OmnipathR::import_omnipath_interactions(organism = organism_id))
+      omniR <- data.table::as.data.table(OmnipathR::import_omnipath_interactions(
+        organism = organism_id, datasets = self$datasets))
       # convert to signed and directed 
       omnipath_sd <- omniR[consensus_direction == 1][consensus_stimulation == 1 | consensus_inhibition == 1]
       omnipath_sd[consensus_stimulation == 0]$consensus_stimulation <- -1
@@ -105,7 +108,7 @@ CarnivalClass <- R6::R6Class(
       
       carnival_result = CARNIVAL::runCARNIVAL( inputObj= initiators,
                                      measObj = tfList$score, 
-                                     netObj = sif, 
+                                     netObj = self$omnipath_sif, 
                                      weightObj = progenylist$score, 
                                      solverPath = self$cbc_solver_path, 
                                      solver =  "cbc",
