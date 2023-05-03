@@ -126,6 +126,7 @@ CausalrClass <- R6::R6Class(
     # 
     run_scanr = function(numCores = 32, numberOfDeltaToScan = 5, 
                          topNumGenes = 100) {
+      message(date(), " => Running Sequential Causal Analysis of Networks")
       r <- CausalR::runSCANR(network = self$ccg, experimentalData = self$regulatedGenes,
                              numberOfDeltaToScan = numberOfDeltaToScan, 
                              topNumGenes = topNumGenes, doParallel = TRUE, 
