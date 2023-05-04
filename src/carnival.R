@@ -8,7 +8,7 @@ CarnivalClass <- R6::R6Class(
     scores = NULL,
     progeny_scores = NULL,
     tf_activity_scores = NULL,
-    omnipath_sif = NULL,
+    network_sif = NULL,
     carnival_result = NULL,
     
     initialize = function(scores_file_path, organism, cbc_solver_path, datasets = c('omnipath')) {
@@ -26,7 +26,7 @@ CarnivalClass <- R6::R6Class(
       self$scores <- self$import_scores()
       self$progeny_scores <- self$compute_progeny()
       self$tf_activity_scores <- self$compute_tf_activity()
-      self$omnipath_sif <- self$get_omnipath_sif()
+      self$network_sif <- self$get_network_sif()
       cat("CarnivalClass object initialized.\n")
     },
     
@@ -63,7 +63,7 @@ CarnivalClass <- R6::R6Class(
     },
     # import omnipath annotations and cleanup to get a SIF format
     # signed-directed graph 
-    get_omnipath_sif = function(datasets = c('omnipath')) {
+    get_network_sif = function(datasets = c('omnipath')) {
       message(date(), " => importing OmniPath annotations in SIF format")
       
       # run carnival using progeny and TF activity scores
@@ -89,10 +89,11 @@ CarnivalClass <- R6::R6Class(
       sif$consensus_stimulation <- NULL
       colnames(sif) <- c('source', 'interaction', 'target')
       # remove complexes
-      sif <- sif[!grepl(':', source) | grepl(':', target)]
+      sif <- unique(sif[!grepl(':|_', source)][!grepl(':|_', target)])
+      message(date(), " => returning a network of ",nrow(sif), " interactions (complexes excluded)")
       return(sif)
     },
-    runCarnival = function() {
+    runCarnival = function(threads = 20) {
       # pathway scores in list
       progenylist <- self$assignPROGENyScores(progeny = self$progeny_scores, 
                                          id = "gene", 
@@ -100,24 +101,35 @@ CarnivalClass <- R6::R6Class(
       # tf scores in list
       tfList <- self$generateTFList(self$tf_activity_scores, top='all', access_idx = 1)
       
-      iniMTX = base::setdiff(self$omnipath_sif$source, self$omnipath_sif$target)
+      iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
       initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
                                                  ncol = length(iniMTX)), 
                                     stringsAsFactors = F)
       colnames(initiators) = iniMTX
-      print(head(initiators))
       
       carnival_result = CARNIVAL::runCARNIVAL( inputObj = initiators,
                                      measObj = tfList$score, 
-                                     netObj = self$omnipath_sif, 
+                                     netObj = self$network_sif, 
                                      weightObj = progenylist$score, 
                                      solverPath = self$cbc_solver_path, 
                                      solver =  "cbc",
                                      timelimit= 7200,
-                                     threads = 20,
+                                     threads = threads,
                                      mipGAP=0,
-                                     poolrelGAP=0)
+                                     poolrelGAP=0, 
+                                     dir_name = file.path(getwd(), 'tmp_carnival'))
       self$carnival_result <- carnival_result
+    }, 
+    # detect communities in a given network (in sif format) 
+    detect_communities = function(network) {
+      df <- data.frame(network)
+      g <- igraph::graph_from_data_frame(df[,c(1,3)])
+      g <- igraph::set.edge.attribute(g, "sign", value = df$Sign)
+      # detect communities in the network
+      comms <- igraph::communities(igraph::cluster_walktrap(g))
+      # sort by community size
+      comms <- comms[names(sort(lengths(comms), decreasing = T))] 
+      return(comms)
     }, 
     # assignPROGENyScores: Function taken from https://github.com/saezlab/transcriptutorial
     assignPROGENyScores = function (progeny = progeny, 
