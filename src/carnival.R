@@ -107,7 +107,7 @@ CarnivalClass <- R6::R6Class(
                                     stringsAsFactors = F)
       colnames(initiators) = iniMTX
       
-      carnival_result = CARNIVAL::runCARNIVAL( inputObj = initiators,
+      carnival_result = CARNIVAL::runCARNIVAL(inputObj = initiators,
                                      measObj = tfList$score, 
                                      netObj = self$network_sif, 
                                      weightObj = progenylist$score, 
@@ -139,15 +139,22 @@ CarnivalClass <- R6::R6Class(
       sg <- igraph::subgraph(g, nodes)
       return(sg)
     },
-    plot_subgraph = function(sg) {
+    plot_subgraph = function(sg, max_size = 50, ...) {
       # add vertex attribute (from tf activity scores)
-      V(sg)$color <- ifelse(self$tf_activity_scores[V(sg)$name,] > 0, "green", "yellow")
-      tf_act <- abs(self$tf_activity_scores[V(sg)$name,])
-      tf_act <- (tf_act - min(tf_act))/(max(tf_act)-min(tf_act)) * 50
-      V(sg)$size <- tf_act
+      nodeAttr <- data.table('name' = V(sg)$name)
+      nodeAttr$tf_activity <- self$tf_activity_scores[match(nodeAttr$name, 
+                                                            rownames(self$tf_activity_scores)),]
+      nodeAttr$color <- 'gray'
+      nodeAttr[!is.na(tf_activity)]$color <- ifelse(nodeAttr[!is.na(tf_activity)]$tf_activity > 0,
+                                                    'green', 'yellow')
+      nodeAttr$size <- max_size
+      tf_act <- abs(nodeAttr[!is.na(tf_activity)]$tf_activity)
+      tf_act <- (tf_act - min(tf_act))/(max(tf_act)-min(tf_act)) * max_size
+      nodeAttr[!is.na(tf_activity)]$size <- tf_act
+      V(sg)$color <- nodeAttr$color
+      V(sg)$size <- nodeAttr$size
       E(sg)$color <- ifelse(E(sg)$sign == 1, "blue", "red")
-      igraph::plot.igraph(sg, vertex.label.cex = 0.8, edge.arrow.size = 0.6, 
-                          layout = igraph::layout.auto(sg)) 
+      igraph::plot.igraph(sg, ...) 
     }, 
     # assignPROGENyScores: Function taken from https://github.com/saezlab/transcriptutorial
     assignPROGENyScores = function (progeny = progeny, 
