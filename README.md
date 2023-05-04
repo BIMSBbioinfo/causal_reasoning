@@ -18,7 +18,9 @@ library(progeny)
 library(dorothea)
 library(OmnipathR)
 library(data.table)
+library(igraph) 
 ```
+
 
 CBC solver (for integer linear programming) optimisation
 ```
