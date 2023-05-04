@@ -130,6 +130,24 @@ CarnivalClass <- R6::R6Class(
       # sort by community size
       comms <- comms[names(sort(lengths(comms), decreasing = T))] 
       return(comms)
+    },
+    # given a network (sif format) and a list of nodes, return a sub-network
+    get_subgraph = function(network, nodes) {
+      df <- data.frame(network)
+      g <- igraph::graph_from_data_frame(df[,c(1,3)])
+      g <- igraph::set.edge.attribute(g, "sign", value = df$Sign)
+      sg <- igraph::subgraph(g, nodes)
+      return(sg)
+    },
+    plot_subgraph = function(sg) {
+      # add vertex attribute (from tf activity scores)
+      V(sg)$color <- ifelse(self$tf_activity_scores[V(sg)$name,] > 0, "green", "yellow")
+      tf_act <- abs(self$tf_activity_scores[V(sg)$name,])
+      tf_act <- (tf_act - min(tf_act))/(max(tf_act)-min(tf_act)) * 50
+      V(sg)$size <- tf_act
+      E(sg)$color <- ifelse(E(sg)$sign == 1, "blue", "red")
+      igraph::plot.igraph(sg, vertex.label.cex = 0.8, edge.arrow.size = 0.6, 
+                          layout = igraph::layout.auto(sg)) 
     }, 
     # assignPROGENyScores: Function taken from https://github.com/saezlab/transcriptutorial
     assignPROGENyScores = function (progeny = progeny, 
