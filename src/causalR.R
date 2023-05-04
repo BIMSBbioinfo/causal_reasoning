@@ -8,7 +8,7 @@ CausalrClass <- R6::R6Class(
     downregulationThreshold = NULL, # score threshold to consider which genes are downregulated
     organism = NULL,
     scores = NULL,
-    omnipath_sif = NULL,
+    network_sif = NULL,
     datasets = NULL, # see OmnipathR::import_omnipath_interactions for options (ex. omnipath, dorothea)
     sif_path = NULL,
     ccg = NULL, 
@@ -32,7 +32,7 @@ CausalrClass <- R6::R6Class(
       self$downregulationThreshold <- downregulationThreshold
       self$datasets <- datasets 
       self$scores <- self$import_scores()
-      self$omnipath_sif <- self$get_omnipath_sif()
+      self$network_sif <- self$get_network_sif()
       # harmonize data
       self$sif_path <- self$harmonize()
       # create a Computational Causal Graph (CCG)
@@ -51,7 +51,7 @@ CausalrClass <- R6::R6Class(
     },
     # import omnipath annotations and cleanup to get a SIF format
     # signed-directed graph 
-    get_omnipath_sif = function(datasets = c('omnipath')) {
+    get_network_sif = function(datasets = c('omnipath')) {
       message(date(), " => importing OmniPath annotations in SIF format")
       
       # run carnival using progeny and TF activity scores
@@ -85,7 +85,7 @@ CausalrClass <- R6::R6Class(
     # remove genes that don't exist in both
     harmonize = function() {
       message(date(), " => harmonizing scores and network data")
-      sif <- self$omnipath_sif
+      sif <- self$network_sif
       genes <- intersect(rownames(self$scores), unique(c(sif$source, sif$target)))
       scores_subset <- self$scores[genes,,drop=F]
       # also update the network
@@ -94,7 +94,7 @@ CausalrClass <- R6::R6Class(
       sif_subset[sif_subset$interaction == -1,]$interaction <- 'Inhibits'
       # update 
       self$scores <- scores_subset
-      self$omnipath_sif <- sif_subset
+      self$network_sif <- sif_subset
       sif_path <- file.path(getwd(), 'omnipath.sif')
       write.table(sif_subset, file = sif_path, 
                   sep = '\t', quote = F, 
@@ -130,7 +130,8 @@ CausalrClass <- R6::R6Class(
       r <- CausalR::runSCANR(network = self$ccg, experimentalData = self$regulatedGenes,
                              numberOfDeltaToScan = numberOfDeltaToScan, 
                              topNumGenes = topNumGenes, doParallel = TRUE, 
-                             numCores = numCores, writeResultFiles = F, writeNetworkFiles = 'none')
+                             numCores = numCores, writeResultFiles = F, 
+                             writeNetworkFiles = 'none')
       self$result <- r
       return(r)
     }
