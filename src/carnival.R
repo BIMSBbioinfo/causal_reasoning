@@ -93,14 +93,15 @@ CarnivalClass <- R6::R6Class(
       message(date(), " => returning a network of ",nrow(sif), " interactions (complexes excluded)")
       return(sif)
     },
-    runCarnival = function(threads = 20) {
+    runCarnival = function(threads = 20, absTFactivityThreshold = 2) {
       # pathway scores in list
       progenylist <- self$assignPROGENyScores(progeny = self$progeny_scores, 
                                          id = "gene", 
                                          access_idx = 1)
-      # tf scores in list
-      tfList <- self$generateTFList(self$tf_activity_scores, top='all', access_idx = 1)
-      
+      # pick top TFs by inferred activity scores
+      tfList <- self$tf_activity_scores[abs(self$tf_activity_scores) > absTFactivityThreshold,]
+      message(date(), " => Using following TFs for causal signaling analysis: å",
+              paste(names(tfList), collapse = " "))
       iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
       initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
                                                  ncol = length(iniMTX)), 
@@ -108,7 +109,7 @@ CarnivalClass <- R6::R6Class(
       colnames(initiators) = iniMTX
       
       carnival_result = CARNIVAL::runCARNIVAL(inputObj = initiators,
-                                     measObj = tfList$score, 
+                                     measObj = tfList, 
                                      netObj = self$network_sif, 
                                      weightObj = progenylist$score, 
                                      solverPath = self$cbc_solver_path, 
@@ -200,33 +201,6 @@ CarnivalClass <- R6::R6Class(
       }
       names(pxList) <- rownames(progeny)[ctrl]
       return(pxList)
-    },
-    # generateTFList: Function taken from https://github.com/saezlab/transcriptutorial
-    generateTFList = function (df = df, top = 50, access_idx = 1) {
-      if (top == "all") {
-        top <- nrow(df)
-      }
-      if (top > nrow(df)) {
-        warning("Number of to TF's inserted exceeds the number of actual TF's in the\n            data frame. All the TF's will be considered.")
-        top <- nrow(df)
-      }
-      ctrl <- intersect(x = access_idx, y = 1:ncol(df))
-      if (length(ctrl) == 0) {
-        stop("The indeces you inserted do not correspond to \n              
-             the number of columns/samples")
-      }
-      returnList <- list()
-      for (ii in 1:length(ctrl)) {
-        tfThresh <- sort(x = abs(df[, ctrl[ii]]), decreasing = TRUE)[top]
-        temp <- which(abs(df[, ctrl[ii]]) >= tfThresh)
-        currDF <- matrix(data = , nrow = 1, ncol = top)
-        colnames(currDF) <- rownames(df)[temp[1:top]]
-        currDF[1, ] <- df[temp[1:top], ctrl[ii]]
-        currDF <- as.data.frame(currDF)
-        returnList[[length(returnList) + 1]] <- currDF
-      }
-      names(returnList) <- colnames(df)[ctrl]
-      return(returnList)
     }))
 
 
