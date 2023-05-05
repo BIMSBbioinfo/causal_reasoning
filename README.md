@@ -45,11 +45,21 @@ source('./src/carnival.R')
 
 # instantiate the class; imports perturbation data
 # calculates pathway and TF activity scores; processes omnipath data
-carnival <- CarnivalClass$new(scores_file_path = './data/lincs_troglitazone_PC3.csv',
-                              organism = 'Human', 
+carnival <- CarnivalClass$new(scores_file_path = scores,
+                              organism = 'Human',
+                              datasets = 'dorothea',
                               cbc_solver_path = '~/.conda/envs/causal_reasoning/bin/cbc')
-# run CARNIVAL 
-carnival$runCarnival()
+# run carnival
+carnival$runCarnival(threads = 32, absTFactivityThreshold = 2)
+
+# detect sub modules in the resulting subnetworks
+comms <- carnival$detect_communities(carnival$carnival_result$sifAll[[1]])
+
+# plot subgraphs (plot the subgraph corresponding to the largest community)
+carnival$plot_subgraph(carnival$get_subgraph(carnival$network_sif, #carnival$carnival_result$sifAll[[1]],
+                                             comms[[1]]),
+                       max_size = 50, margin = -0.5)
+
 
 # access the results
 carnival$carnival_result
