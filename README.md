@@ -45,7 +45,7 @@ source('./src/carnival.R')
 
 # instantiate the class; imports perturbation data
 # calculates pathway and TF activity scores; processes omnipath data
-carnival <- CarnivalClass$new(scores_file_path = scores,
+carnival <- CarnivalClass$new(scores_file_path = 'data/lincs_troglitazone_PC3.csv',
                               organism = 'Human',
                               datasets = 'dorothea',
                               cbc_solver_path = '~/.conda/envs/causal_reasoning/bin/cbc')
