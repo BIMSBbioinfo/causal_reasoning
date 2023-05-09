@@ -100,7 +100,7 @@ CarnivalClass <- R6::R6Class(
                                          access_idx = 1)
       # pick top TFs by inferred activity scores
       tfList <- self$tf_activity_scores[abs(self$tf_activity_scores) > absTFactivityThreshold,]
-      message(date(), " => Using following TFs for causal signaling analysis: å",
+      message(date(), " => Using following TFs for causal signaling analysis: ",
               paste(names(tfList), collapse = " "))
       iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
       initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
@@ -125,9 +125,10 @@ CarnivalClass <- R6::R6Class(
     detect_communities = function(network) {
       df <- data.frame(network)
       g <- igraph::graph_from_data_frame(df[,c(1,3)])
-      g <- igraph::set.edge.attribute(g, "sign", value = df$Sign)
+      g <- igraph::set.edge.attribute(g, "interaction", value = df$Sign)
       # detect communities in the network
       comms <- igraph::communities(igraph::cluster_walktrap(g))
+      #comms <- igraph::communities(igraph::cluster_label_prop(g))
       # sort by community size
       comms <- comms[names(sort(lengths(comms), decreasing = T))] 
       return(comms)
@@ -136,7 +137,7 @@ CarnivalClass <- R6::R6Class(
     get_subgraph = function(network, nodes) {
       df <- data.frame(network)
       g <- igraph::graph_from_data_frame(df[,c(1,3)])
-      g <- igraph::set.edge.attribute(g, "sign", value = df$Sign)
+      g <- igraph::set.edge.attribute(g, "interaction", value = df$interaction)
       sg <- igraph::subgraph(g, nodes)
       return(sg)
     },
@@ -154,7 +155,7 @@ CarnivalClass <- R6::R6Class(
       nodeAttr[!is.na(tf_activity)]$size <- tf_act
       V(sg)$color <- nodeAttr$color
       V(sg)$size <- nodeAttr$size
-      E(sg)$color <- ifelse(E(sg)$sign == 1, "blue", "red")
+      E(sg)$color <- ifelse(E(sg)$interaction == 1, "blue", "red")
       igraph::plot.igraph(sg, ...) 
     }, 
     # assignPROGENyScores: Function taken from https://github.com/saezlab/transcriptutorial
