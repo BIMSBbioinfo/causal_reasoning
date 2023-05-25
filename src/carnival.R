@@ -1,29 +1,38 @@
 CarnivalClass <- R6::R6Class(
   "CarnivalClass",
   public = list(
-    scores_file_path = NULL,
+    scores_input = NULL, # a matrix or data frame (or a file path) consisting of genes on the row names and a single column
     organism = NULL,
     cbc_solver_path = NULL,
     datasets = NULL, # see OmnipathR::import_omnipath_interactions for options (ex. omnipath, dorothea)
+    initiators = NULL, # initial nodes to use as the root of the network
+                      # a vector of gene names 
     scores = NULL,
     progeny_scores = NULL,
     tf_activity_scores = NULL,
     network_sif = NULL,
     carnival_result = NULL,
     
-    initialize = function(scores_file_path, organism, cbc_solver_path, datasets = c('omnipath')) {
-      if (missing(scores_file_path) || missing(organism) || missing(cbc_solver_path)) {
-        stop("All three arguments must be provided: scores_file_path, organism, cbc_solver_path")
+    initialize = function(scores_input, organism, cbc_solver_path, datasets = c('omnipath'), initiators = NULL) {
+      if (missing(scores_input) || missing(organism) || missing(cbc_solver_path)) {
+        stop("All three arguments must be provided: scores_input, organism, cbc_solver_path")
       }
       
-      self$scores_file_path <- scores_file_path
+      self$scores_input <- scores_input
       self$organism <- organism
       self$cbc_solver_path <- cbc_solver_path
       self$datasets <- datasets 
+      self$initiators <- initiators 
       if(!organism %in% c('Human', 'Mouse')){
         stop("Can't create a class for ",organism,". Allowed options are Human and Mouse")
       }
-      self$scores <- self$import_scores()
+      if(is.data.frame(scores_input) || is.matrix(scores_input)) {
+        self$scores <- as.matrix(scores_input)
+      } else if(is.character(scores_input) && file.exists(scores_input)) {
+        self$scores <- self$import_scores()
+      } else {
+          stop("Input must be a data frame, a matrix, or a valid file path.")
+      }
       self$progeny_scores <- self$compute_progeny()
       self$tf_activity_scores <- self$compute_tf_activity()
       self$network_sif <- self$get_network_sif()
@@ -32,8 +41,8 @@ CarnivalClass <- R6::R6Class(
     
     # import input file, perturbation readout  
     import_scores = function() {
-      message(date(), " => importing perturbation data from ",self$scores_file_path)
-      df <- read.csv(self$scores_file_path, row.names = 1)
+      message(date(), " => importing perturbation data from ",self$scores_input)
+      df <- read.csv(self$scores_input, row.names = 1)
       colnames(df)[1] <- 'score'
       return(as.matrix(df))
     },
@@ -102,13 +111,22 @@ CarnivalClass <- R6::R6Class(
       tfList <- self$tf_activity_scores[abs(self$tf_activity_scores) > absTFactivityThreshold,]
       message(date(), " => Using following TFs for causal signaling analysis: ",
               paste(names(tfList), collapse = " "))
-      iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
-      initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
-                                                 ncol = length(iniMTX)), 
-                                    stringsAsFactors = F)
-      colnames(initiators) = iniMTX
+      if(is.null(self$initiators)) {
+        iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
+        initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
+                                                   ncol = length(iniMTX)), 
+                                      stringsAsFactors = F)
+        colnames(initiators) = iniMTX
+        self$initiators <- initiators
+      } else {
+        df <- base::data.frame(base::matrix(data = 1, nrow = 1, 
+                                      ncol = length(self$initiators)), 
+                         stringsAsFactors = F) 
+        colnames(df) <- self$initiators
+        self$initiators <- df
+      }
       
-      carnival_result = CARNIVAL::runCARNIVAL(inputObj = initiators,
+      carnival_result = CARNIVAL::runCARNIVAL(inputObj = self$initiators,
                                      measObj = tfList, 
                                      netObj = self$network_sif, 
                                      weightObj = progenylist$score, 
