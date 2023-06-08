@@ -36,7 +36,22 @@ CarnivalClass <- R6::R6Class(
       self$progeny_scores <- self$compute_progeny()
       self$tf_activity_scores <- self$compute_tf_activity()
       self$network_sif <- self$get_network_sif()
-      cat("CarnivalClass object initialized.\n")
+      # define initial nodes 
+      if(is.null(self$initiators)) {
+        iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
+        initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
+                                                   ncol = length(iniMTX)), 
+                                      stringsAsFactors = F)
+        colnames(initiators) = iniMTX
+        self$initiators <- initiators
+      } else {
+        df <- base::data.frame(base::matrix(data = 1, nrow = 1, 
+                                            ncol = length(self$initiators)), 
+                               stringsAsFactors = F) 
+        colnames(df) <- self$initiators
+        self$initiators <- df
+      }
+      message("CarnivalClass object initialized.\n")
     },
     
     # import input file, perturbation readout  
@@ -111,20 +126,7 @@ CarnivalClass <- R6::R6Class(
       tfList <- self$tf_activity_scores[abs(self$tf_activity_scores) > absTFactivityThreshold,]
       message(date(), " => Using following TFs for causal signaling analysis: ",
               paste(names(tfList), collapse = " "))
-      if(is.null(self$initiators)) {
-        iniMTX = base::setdiff(self$network_sif$source, self$network_sif$target)
-        initiators = base::data.frame(base::matrix(data = NaN, nrow = 1, 
-                                                   ncol = length(iniMTX)), 
-                                      stringsAsFactors = F)
-        colnames(initiators) = iniMTX
-        self$initiators <- initiators
-      } else {
-        df <- base::data.frame(base::matrix(data = 1, nrow = 1, 
-                                      ncol = length(self$initiators)), 
-                         stringsAsFactors = F) 
-        colnames(df) <- self$initiators
-        self$initiators <- df
-      }
+
       
       carnival_result = CARNIVAL::runCARNIVAL(inputObj = self$initiators,
                                      measObj = tfList, 
@@ -151,31 +153,6 @@ CarnivalClass <- R6::R6Class(
       comms <- comms[names(sort(lengths(comms), decreasing = T))] 
       return(comms)
     },
-    # given a network (sif format) and a list of nodes, return a sub-network
-    get_subgraph = function(network, nodes) {
-      df <- data.frame(network)
-      g <- igraph::graph_from_data_frame(df[,c(1,3)])
-      g <- igraph::set.edge.attribute(g, "interaction", value = df$interaction)
-      sg <- igraph::subgraph(g, nodes)
-      return(sg)
-    },
-    plot_subgraph = function(sg, max_size = 50, ...) {
-      # add vertex attribute (from tf activity scores)
-      nodeAttr <- data.table('name' = V(sg)$name)
-      nodeAttr$tf_activity <- self$tf_activity_scores[match(nodeAttr$name, 
-                                                            rownames(self$tf_activity_scores)),]
-      nodeAttr$color <- 'gray'
-      nodeAttr[!is.na(tf_activity)]$color <- ifelse(nodeAttr[!is.na(tf_activity)]$tf_activity > 0,
-                                                    'green', 'yellow')
-      nodeAttr$size <- max_size
-      tf_act <- abs(nodeAttr[!is.na(tf_activity)]$tf_activity)
-      tf_act <- (tf_act - min(tf_act))/(max(tf_act)-min(tf_act)) * max_size
-      nodeAttr[!is.na(tf_activity)]$size <- tf_act
-      V(sg)$color <- nodeAttr$color
-      V(sg)$size <- nodeAttr$size
-      E(sg)$color <- ifelse(E(sg)$interaction == 1, "blue", "red")
-      igraph::plot.igraph(sg, ...) 
-    }, 
     # assignPROGENyScores: Function taken from https://github.com/saezlab/transcriptutorial
     assignPROGENyScores = function (progeny = progeny, 
                                     id = "gene", access_idx = 1) {
