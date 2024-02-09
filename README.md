@@ -7,6 +7,10 @@
 
 A collection of tools, which, when given a readout of a perturbation experiment, runs tools such as CARNIVAL/causalR to infer the causal factors that leads to the observed outcome
 
+# Background
+See [slides](https://docs.google.com/presentation/d/1W3t3zTk-sc6UOKxqZBXWS6HRLLhUrvOsFunh_PqkNyE/edit?usp=sharing) for some links to background concepts such as Prize Collecting Steiner Trees and some papers 
+that have formed the foundation of tools such as CARNIVAL/causalR. 
+
 # Dependencies
 
 
